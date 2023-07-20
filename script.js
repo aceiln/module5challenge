@@ -1,23 +1,72 @@
-// Wrap all code that interacts with the DOM in a call to jQuery to ensure that
-// the code isn't run until the browser has finished rendering all the elements
-// in the html.
-$(function () {
-  // TODO: Add a listener for click events on the save button. This code should
-  // use the id in the containing time-block as a key to save the user input in
-  // local storage. HINT: What does `this` reference in the click listener
-  // function? How can DOM traversal be used to get the "hour-x" id of the
-  // time-block containing the button that was clicked? How might the id be
-  // useful when saving the description in local storage?
-  //
-  // TODO: Add code to apply the past, present, or future class to each time
-  // block by comparing the id to the current hour. HINTS: How can the id
-  // attribute of each time-block be used to conditionally add or remove the
-  // past, present, and future classes? How can Day.js be used to get the
-  // current hour in 24-hour time?
-  //
-  // TODO: Add code to get any user input that was saved in localStorage and set
-  // the values of the corresponding textarea elements. HINT: How can the id
-  // attribute of each time-block be used to do this?
-  //
-  // TODO: Add code to display the current date in the header of the page.
+$(document).ready(function () {
+  $(function () {
+
+    function convertTo12Hour(hour) {
+      if (hour === 0) {
+          return '12am';
+      } else if (hour === 12) {
+          return '12pm';
+      } else if (hour < 12) {
+          return `${hour}am`;
+      } else {
+          return `${hour - 12}pm`;
+      }
+    }
+    
+    function getRelativeTime(hour) {
+      const currentHour = (new Date()).getHours();
+      if (hour < currentHour) {
+          return `past`
+      } else if (hour > currentHour) {
+          return `future`
+      } else if (hour === currentHour) {
+          return `present`
+      }
+    }
+    
+    function getLocalStorageData() {
+      let localStorageEvents = window.localStorage.getItem('events')
+      if (localStorageEvents === null) {
+        localStorageEvents = JSON.stringify(new Array(24).fill(''))
+        window.localStorage.setItem('events', localStorageEvents)
+      }
+    
+      return JSON.parse(localStorageEvents)
+    }
+    
+    function loadTimeBlocks() {
+      for (let i = 0; i <= 23; i++) {
+        const timeIn12Hour = convertTo12Hour(i) // 12am, 12pm, 3am, 5pm, etc
+        const relativeTime = getRelativeTime(i) // past, present, future
+        const eventsForTime = getLocalStorageData()[i]
+    
+        $('#schedule_list').append(`<div id="${i}" class="row time-block ${relativeTime}">
+        <div class="col-2 col-md-1 hour text-center py-3">${timeIn12Hour}</div>
+        <textarea class="col-8 col-md-10 description" rows="3">${eventsForTime}</textarea>
+        <button id="${i}" class="btn saveBtn col-2 col-md-1" aria-label="save">
+          <i class="fas fa-save" aria-hidden="true"></i>
+        </button>
+      </div>`)
+      }
+    }
+    
+    function saveEvent(timeslot, eventData) {
+      console.log(eventData)
+      let localStorageData = getLocalStorageData()
+      localStorageData[timeslot] = eventData
+    
+      window.localStorage.setItem('events', JSON.stringify(localStorageData))
+    }
+
+    // Load page, setup event handler
+
+    $("#header_date").text(new Date().toLocaleDateString())
+
+    loadTimeBlocks()
+    
+    $(".saveBtn").click(function(event){
+      saveEvent($(event.target).attr('id'), $(event.target).closest('.row').find('.description').val())
+    });
+    
+  });
 });
